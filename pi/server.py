@@ -106,30 +106,7 @@ def memory():
     ]
 
 
-METRICS_DIR = Path(os.environ.get("METRICS_DIR", "/tmp/pi-monitor"))
-METRICS_MAX_AGE = 5.0  # seconds; older files mean the writer stopped
-FILE_METRICS = {
-    "camera_fps": "Frames per second delivered by rpicam-vid.",
-    "yolo_fps": "Frames per second processed by yolo predict.",
-    "yolo_inference_ms": "Mean YOLO inference time per frame, ms.",
-}
-
-
-def file_metrics():
-    """Single-number files written by vision/vision.py. Missing or stale files are skipped."""
-    out = []
-    for name, help_text in FILE_METRICS.items():
-        path = METRICS_DIR / name
-        try:
-            if time.time() - path.stat().st_mtime > METRICS_MAX_AGE:
-                continue
-            out.append(metric(name, float(path.read_text()), help_text))
-        except (FileNotFoundError, ValueError):
-            continue
-    return out
-
-
-COLLECTORS = [cpu_temp, throttling, cpu_usage, memory, file_metrics]
+COLLECTORS = [cpu_temp, throttling, cpu_usage, memory]
 
 
 class PiMonitor(pimonitor_pb2_grpc.PiMonitorServicer):

@@ -43,9 +43,8 @@ flowchart LR
                 C2["throttling()"]
                 C3["cpu_usage()"]
                 C4["memory()"]
-                C5["file_metrics()"]
             end
-            SRV --> C1 & C2 & C3 & C4 & C5
+            SRV --> C1 & C2 & C3 & C4
         end
 
         subgraph OS["OS / CLI sources"]
@@ -57,27 +56,11 @@ flowchart LR
             MEM["/proc/meminfo"]
         end
 
-        subgraph VISION["pi/vision/start.sh -> vision.py"]
-            direction TB
-            VPY["vision.py<br/>Popen + pump threads<br/>Meter.flush() every 1s"]
-            CAM["$ rpicam-vid -n -t 0 --inline<br/>--listen -v 2 -o tcp://127.0.0.1:8888"]
-            YOLO["$ uv run yolo predict<br/>model=yolo26n.pt<br/>source=tcp://127.0.0.1:8888 save=False"]
-            VPY -->|"subprocess.Popen"| CAM
-            VPY -->|"subprocess.Popen"| YOLO
-            CAM -->|"H.264 stream<br/>tcp :8888"| YOLO
-            CAM -.->|"stdout: Viewfinder frame N"| VPY
-            YOLO -.->|"stdout: ... 85.3ms"| VPY
-        end
-
-        FILES[("/tmp/pi-monitor/<br/>camera_fps<br/>yolo_fps<br/>yolo_inference_ms")]
-
         C1 -->|"subprocess.run<br/>timeout=5"| VC1
         C1 -.->|"fallback on error"| THERM
         C2 -->|"subprocess.run<br/>decode bits 0-3, 16-19"| VC2
         C3 -->|"read jiffies<br/>delta vs previous call"| STAT
         C4 -->|"MemTotal / MemAvailable"| MEM
-        VPY -->|"write_metric()<br/>atomic os.replace"| FILES
-        C5 -->|"read if mtime < 5s old"| FILES
     end
 
     %% ---------------- cross-machine ----------------
@@ -97,13 +80,6 @@ sequenceDiagram
     participant B as bridge.py (PiMonitorStub)
     participant S as server.py (PiMonitorServicer)
     participant CLI as vcgencmd / procfs
-    participant F as /tmp/pi-monitor files
-    participant V as vision.py
-
-    loop every 1s (independent of scrapes)
-        V->>V: count rpicam-vid / yolo stdout lines
-        V->>F: write camera_fps, yolo_fps, yolo_inference_ms
-    end
 
     G->>P: PromQL query
     P->>B: HTTP GET /metrics (every 5s)
@@ -114,8 +90,6 @@ sequenceDiagram
     CLI-->>S: throttled=0x50000
     S->>CLI: read /proc/stat, /proc/meminfo
     CLI-->>S: jiffies, MemTotal, MemAvailable
-    S->>F: read files (skip if older than 5s)
-    F-->>S: fps / inference ms
     S-->>B: GetMetricsResponse(hostname, timestamp_ms, metrics[])
     B->>B: render(): rpi_<name>{pi, target, labels} + rpi_up
     B-->>P: Prometheus text format

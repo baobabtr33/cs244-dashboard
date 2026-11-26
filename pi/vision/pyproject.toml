@@ -1,8 +1,0 @@
-[project]
-name = "pi-vision"
-version = "0.1.0"
-description = "Ultralytics YOLO on the Raspberry Pi camera stream, measured by vision.py"
-requires-python = ">=3.11"
-dependencies = [
-    "ultralytics>=8.3",
-]
