@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package pimonitor;
+
+// Served by the Raspberry Pi. The desktop calls GetMetrics to pull readings.
+service PiMonitor {
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+}
+
+message GetMetricsRequest {}
+
+// One reading, e.g. name="cpu_temperature_celsius" value=48.3, or
+// name="throttle_flag" labels={flag:"under_voltage", when:"now"} value=0.
+// New metrics only need a new collector on the Pi; the proto stays the same.
+message Metric {
+  string name = 1;
+  double value = 2;
+  string help = 3;
+  map<string, string> labels = 4;
+}
+
+message GetMetricsResponse {
+  string hostname = 1;
+  int64 timestamp_ms = 2;
+  repeated Metric metrics = 3;
+}
