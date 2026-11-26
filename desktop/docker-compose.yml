@@ -1,5 +1,5 @@
 # Runs on the desktop. Pulls from the Pi over gRPC and shows the dashboard.
-# Usage: PI_TARGETS=172.31.227.194:50051 docker compose up -d --build   (or ./run.sh <targets>)
+# Usage: PI_TARGETS=172.31.227.194:50051 docker compose up -d --build   (or ./run.sh, which prompts for the Pi IP)
 # Stop:  docker compose down        Wipe data too: docker compose down -v
 services:
   grpc-bridge:
