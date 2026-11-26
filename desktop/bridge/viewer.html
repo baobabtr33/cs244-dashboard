@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Latest image</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; color: #ccccdc;
+               font: 13px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  #meta { padding: 4px 2px 6px; display: flex; gap: 12px; align-items: baseline; }
+  #time { font-size: 16px; font-weight: 600; color: #fff; }
+  #age, #name { color: #8e8e9e; }
+  #wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  #empty { color: #8e8e9e; }
+</style>
+</head>
+<body>
+<div id="meta"><span id="time">-</span><span id="age"></span><span id="name"></span></div>
+<div id="wrap"><img id="img" alt="" hidden><span id="empty">Waiting for images in desktop/images ...</span></div>
+<script>
+// Polls the bridge for the newest file in desktop/images and shows it with its timestamp.
+const POLL_MS = 5000;
+let current = null, mtime = null;
+
+function ago(ms) {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s ago`;
+  return `${Math.floor(s / 3600)}h ${Math.floor(s % 3600 / 60)}m ago`;
+}
+
+async function poll() {
+  try {
+    const r = await fetch("latest.json", { cache: "no-store" });
+    const info = await r.json();
+    if (!info.name) {
+      document.getElementById("img").hidden = true;
+      document.getElementById("empty").hidden = false;
+      document.getElementById("time").textContent = "-";
+      document.getElementById("name").textContent = "";
+      mtime = null;
+    } else {
+      const key = info.name + "@" + info.mtime_ms;
+      if (key !== current) {
+        current = key;
+        const img = document.getElementById("img");
+        img.src = "file/" + encodeURIComponent(info.name) + "?t=" + info.mtime_ms;
+        img.hidden = false;
+        document.getElementById("empty").hidden = true;
+      }
+      mtime = info.mtime_ms;
+      document.getElementById("time").textContent = new Date(mtime).toLocaleString();
+      document.getElementById("name").textContent = info.name;
+    }
+  } catch (e) {
+    document.getElementById("time").textContent = "bridge unreachable";
+  }
+  document.getElementById("age").textContent = mtime ? ago(mtime) : "";
+}
+
+poll();
+setInterval(poll, POLL_MS);
+setInterval(() => { if (mtime) document.getElementById("age").textContent = ago(mtime); }, 1000);
+</script>
+</body>
+</html>

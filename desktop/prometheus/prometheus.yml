@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s
+
+# Prometheus scrapes the local bridge; the bridge pulls from the Pi over gRPC.
+scrape_configs:
+  - job_name: pi
+    static_configs:
+      - targets: ["grpc-bridge:9110"]
