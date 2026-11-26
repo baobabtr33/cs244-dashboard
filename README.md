@@ -45,9 +45,10 @@ flowchart RL
 #### Step 1: Start the Pi
 
 ssh into raspberry Pi, and run:
+The files should already be there. It is either in the root directory or the desktop
 
 ```bash
-cd desktop/pi
+cd <directory-to-pi>/pi
 ./start.sh
 ```
 
