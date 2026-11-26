@@ -40,3 +40,43 @@ flowchart RL
 3. On the Pi, `server.py` runs every collector (`cpu_temp`, `throttling`, `cpu_usage`, `memory`) and returns a `GetMetricsResponse` (contract in `proto/pimonitor.proto`).
 4. The bridge renders each metric as `rpi_<name>{pi, target, ...labels}` in Prometheus text format, plus `rpi_up{target}` (1 if the call succeeded, 0 if not).
 5. Grafana queries Prometheus with PromQL to draw the panels.
+
+## How to run
+#### Step 1: Start the Pi
+
+ssh into raspberry Pi, and run:
+
+```bash
+cd desktop/pi
+./start.sh
+```
+
+The last line prints the Pi's IP, for example `Pi gRPC target for desktop: 172.31.227.194:50051`. 
+If it says `uv not found`, install uv first, then run `./start.sh` again (should be already installed):
+
+```bash
+# skip
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### Step 2: Start the dashboard on your desktop
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and open it. Then run:
+
+```bash
+cd desktop
+./run.sh
+```
+
+When it asks `Pi IP`, type the raspberry pi IP and press Enter.
+
+#### Step 3: Open the dashboard
+
+Go to http://localhost:3000 in your browser.  
+Log in with username `admin` and password `admin`.  
+Even without connection, you should be able to see the dashboard with "No Data" and see the latest image
+
+#### Stopping
+
+- Desktop: `cd desktop && docker compose down`
+- Pi: `cd desktop/pi && ./start.sh stop`
