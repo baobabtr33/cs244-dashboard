@@ -5,11 +5,11 @@ Directory Tree with summary
 
 ├── README.md
 ├── desktop (Dashboard Setup)
-│   ├── bridge 
+│   ├── bridge (bridge between desktop and pi / utilizes grpc)
 │   ├── docker-compose.yml
 │   ├── grafana (Frontend Service for visualization)
 │   ├── images (storage for images received)
-│   ├── prometheus (tsdb, data scraping)
+│   ├── prometheus (tsdb, data scraping from bridge)
 │   │   └── prometheus.yml
 │   └── run.sh
 ├── pi (Raspberry Pi Setup)
@@ -21,35 +21,16 @@ Directory Tree with summary
 
 ```
 
-## Data flow
+## Data flow (w/ mermaid)
 
 ```mermaid
-flowchart LR
-    subgraph PI["Raspberry Pi (pi/start.sh)"]
-        direction TB
-        OS["vcgencmd measure_temp / get_throttled<br/>/proc/stat, /proc/meminfo<br/>/sys/class/thermal (fallback)"]
-        SRV["server.py :50051<br/>PiMonitor.GetMetrics()<br/>runs COLLECTORS per call"]
-        OS -->|"read on every call"| SRV
-    end
-
-    subgraph DESKTOP["Desktop (desktop/run.sh, docker compose)"]
-        direction TB
-        BR["grpc-bridge :9110<br/>bridge.py"]
-        IMG[("desktop/images/<br/>mounted at /images (read-only)")]
-        PROM["Prometheus :9090<br/>scrape every 5s, 30d retention"]
-        GRAF["Grafana :3000<br/>raspberry-pi.json"]
-        USER(["Browser"])
-
-        PROM -->|"GET /metrics"| BR
-        BR -->|"rpi_&lt;name&gt;{pi,target,...}<br/>rpi_up{target}"| PROM
-        GRAF -->|"PromQL"| PROM
-        IMG -->|"newest file by mtime<br/>PGM/PPM converted to PNG"| BR
-        USER -->|"dashboards"| GRAF
-        USER -->|"image panel iframe<br/>/images/, /images/latest.json,<br/>/images/file/&lt;name&gt;"| BR
-    end
-
-    BR ==>|"gRPC GetMetricsRequest<br/>PI_TARGETS, timeout 3s"| SRV
-    SRV ==>|"GetMetricsResponse<br/>hostname, timestamp_ms, metrics[]"| BR
+flowchart RL
+    PI["Pi :50051"] -->|gRPC GetMetrics| BR["bridge :9110"]
+    PI -->|images| IMG[("desktop/images/")]
+    IMG -->|newest image| BR
+    BR -->|/metrics| PROM["Prometheus :9090"]
+    PROM -->|PromQL| GRAF["Grafana :3000"]
+    BR -->|/images/| GRAF
 ```
 
 ### One scrape cycle
